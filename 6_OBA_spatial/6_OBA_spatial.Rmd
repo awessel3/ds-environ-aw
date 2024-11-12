@@ -1,6 +1,6 @@
 ---
 title: "Exploring bee-related spatial data"
-output: github_document
+output: pdf_document
 author:
   - Lauren Ponisio
 ---
@@ -27,17 +27,21 @@ library(sf)
 
 a. Import the OBA data.
 ```{r}
+OBA_data <- read.csv("OBA_2018-2023.csv")
 
 ```
 
 b. Find the columns related to genus and species and paste them together (with a space between) using the function paste(). Name the new column GenusSpecies.
 ```{r}
-
+OBA_data$GenusSpecies <- paste(OBA_data$Genus, OBA_data$Species)
 ```
 
 c. Use `sort()` and `unique()` to print the unique values of GenusSpecies in alphabetical order.  How many species are there? 
 
 ```{r}
+unique_species <- sort(unique(OBA_data$GenusSpecies))
+
+length(unique_species)
 
 ```
 
@@ -48,14 +52,24 @@ d. So many bees, so little time. Count up the occurrences of each bee species, a
 You can use the tidyverse or any other functions in R that you like. How many "species" are there? 
 
 ```{r}
+OBA_data_subset <- OBA_data %>% 
+  group_by(Species) %>% 
+  filter(n() >= 2)
 
+length(unique(OBA_data_subset$Species))
+#unique(OBA_data_subset$Species)
 ```
 
 e. Google a few bee names (that have been seen > 2 times) and find one with an a look that resonates with you.
 
 What is the name of your bee? 
 
+Blue Orchid Bee - Osmia Lignaria
+
+
 Import the photos into Rmarkdown below (hint: googling bee name "discover life" or "inat" can often get you a photo. Many bees will no have any photos :( 
+
+![Blue Orchid Bee](https://inaturalist-open-data.s3.amazonaws.com/photos/12205306/medium.jpg)
 
 # Lab part 2: Plotting the distrubution of your spirit bee. 
 
@@ -72,13 +86,27 @@ Hint 1: consider what other data you would like to keep as attributes, for examp
 Hint 3: You may want to rename the column names you can use, colnames() and reassign the names, since the ones in the oba data spreadsheet are really ugly. 
 
 ```{r}
+colnames(OBA_data_subset)
 
+lignaria_species <- OBA_data_subset %>%
+  filter(Species == "lignaria") %>% 
+  rename(latitude = Dec..Lat., longitude = Dec..Long.) %>% 
+  select(latitude, longitude, Associated.plant, Species)
 
+lignaria_species_sf <- st_as_sf(lignaria_species,
+                        coords = c("longitude", "latitude"),
+                        crs = crs("EPSG:4326"))
+lignaria_species
 ```
 
 b. Plot your exciting bee data!
 
 ```{r plot-data-points}
+
+ggplot() +
+  geom_sf(data = lignaria_species_sf) +
+  ggtitle("Osmia lignaria observations") + 
+  labs( x = "latitude", y = "longitude")
 
 ```
 
@@ -97,6 +125,12 @@ c. Add your species's points to your choice or an Oregon basemap.
 ```{r plot-data-points-basemap}
 library(ggspatial)
 
+ggplot() +
+  geom_polygon(data = or, aes(x = lon, y = lat, group = group), fill = "lightgray", color = "black") +
+  geom_sf(data = lignaria_species_sf, color = "blue") +
+  ggtitle("Osmia lignaria observations") + 
+  labs( x = "longitude", y = "latitude")
+
 
 ```
 # Lab part 3: Cartography
@@ -111,6 +145,17 @@ additional attributes when you converted the dataframe to a spatial object.
 6. Push this lab to your github repo (just the .Rmd, don't push the data!)
 
 ```{r plot-creative}
+OR_Blocks <- st_read("CensusBlockGroups/CensusBlockGroups.shp")
+
+
+OR_Blocks <- OR_Blocks %>%  rename(latitude = INTPTLAT, longitude = INTPTLON)
+
+ggplot() +
+  geom_polygon(data = or, aes(x = lon, y = lat, group = group), fill = "lightgray", color = "black") +
+  geom_polygon(data = OR_Blocks_sf)
+  4geom_sf(data = lignaria_species_sf, color = "blue") +
+  ggtitle("Osmia lignaria observations") + 
+  labs( x = "longitude", y = "latitude")
 
 
 ```
